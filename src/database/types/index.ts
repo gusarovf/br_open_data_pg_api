@@ -27,3 +27,41 @@ export interface Document {
   addressLocalityAddressType: string // поле "Тип" элемента "НаселПункт"
   addressLocalityAddressName: string // поле "Наим" элемента "НаселПункт"
 }
+
+export interface Update {
+  archiveId: number
+  tablesPostfix: string
+  isLoaded: number
+  areTablesExist: number
+}
+
+export interface SubjectV1 {
+  id: number
+  documentId: number
+  isOrganisation: number
+  subjectNameFull: string
+  subjectNameShort: string
+  name: string
+  middleName: string
+  lastName: string
+  inn: string
+  docRawId: string
+  docCreatedAt: string
+  docIncludedAt: string
+  docSubjectType: string
+  docSubjectCategory: string
+  docIsNew: string
+  fileFileName: string
+}
+
+export interface SubjectLocation {
+  regionCode: string
+  regionName: string
+  regionType: string
+  areaName: string
+  areaType: string
+  cityName: string
+  cityType: string
+  townName: string
+  townType: string
+}
