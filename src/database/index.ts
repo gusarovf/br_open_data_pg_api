@@ -1,6 +1,7 @@
 import { dbConn } from "../config"
 import { Pool } from "pg"
-import { Document } from "../server/types"
+import { Document } from "./types"
+import { Update, SubjectV1, SubjectLocation } from "./types"
 
 const pool = new Pool({ ...dbConn })
 
@@ -9,7 +10,7 @@ export const poolQuery = async (query: string): Promise<any[] | undefined> => {
     const client = await pool.connect()
     try {
       const res = await client.query(query)
-      return res && res.rows ? res.rows : undefined
+      return res?.rows?.length ? res.rows : undefined
     } finally {
       client.release()
     }
@@ -26,36 +27,32 @@ export const poolQuery = async (query: string): Promise<any[] | undefined> => {
   }
 }
 
-export const getLatestUpdate = async (): Promise<{
-  postfix: string
-} | null> => {
-  const getUpdate = async (shouldGetOnlyLoaded: boolean) => {
-    const upd = await poolQuery(`
+const getUpdate = async (
+  shouldGetOnlyLoaded: boolean
+): Promise<Update | undefined> => {
+  const upd = await poolQuery(`
     SELECT 
-      archive_id,
-      tables_postfix,
-      is_loaded,
-      are_tables_exist
+      archive_id AS "archiveId",
+      tables_postfix AS "tablesPostfix",
+      is_loaded AS "isLoaded",
+      are_tables_exist as "areTablesExist"
     FROM
       updates 
     WHERE
-      are_tables_exist=1
-      ${shouldGetOnlyLoaded ? " AND is_loaded=1 " : ""}
+      are_tables_exist = 1
+      ${shouldGetOnlyLoaded ? " AND is_loaded = 1 " : ""}
     ORDER BY 
       id DESC
-    LIMIT 1
-  `)
-    if (!upd?.length) return null
-    return upd[0]
-  }
+    LIMIT 1;`)
+
+  if (!upd?.length) return
+  return upd[0]
+}
+
+export const getLatestUpdatePostfix = async (): Promise<string | undefined> => {
   const upd = (await getUpdate(true)) || (await getUpdate(false))
 
-  if (upd) {
-    return {
-      postfix: upd.tables_postfix,
-    }
-  }
-  return null
+  return upd ? upd.tablesPostfix : undefined
 }
 
 export const getDocument = async (
@@ -70,21 +67,21 @@ export const getDocument = async (
   const subjectRes = await poolQuery(
     `SELECT
         ${subjTable}.id,
-        ${subjTable}.document_id,
-        ${subjTable}.is_organisation,
-        ${subjTable}.subject_name_full,
-        ${subjTable}.subject_name_short,
+        ${subjTable}.document_id AS "documentId",
+        ${subjTable}.is_organisation AS "isOrganisation",
+        ${subjTable}.subject_name_full AS "subjectNameFull",
+        ${subjTable}.subject_name_short AS "subjectNameShort",
         ${subjTable}.name,
-        ${subjTable}.middle_name,
-        ${subjTable}.last_name,
+        ${subjTable}.middle_name AS "middleName",
+        ${subjTable}.last_name AS "lastName",
         ${subjTable}.inn,
-        ${docTable}.doc_raw_id AS doc_raw_id,
-        ${docTable}.created_at AS doc_created_at,
-        ${docTable}.included_at AS doc_included_at,
-        ${docTable}.subject_type AS doc_subject_type,
-        ${docTable}.subject_category AS doc_subject_category,
-        ${docTable}.is_new AS doc_is_new,
-        ${fileTable}.file_name AS file_file_name
+        ${docTable}.doc_raw_id AS "docRawId",
+        ${docTable}.created_at AS "docCreatedAt",
+        ${docTable}.included_at AS "docIncludedAt",
+        ${docTable}.subject_type AS "docSubjectType",
+        ${docTable}.subject_category AS "docSubjectCategory",
+        ${docTable}.is_new AS "docIsNew",
+        ${fileTable}.file_name AS "fileFileName"
      FROM ${subjTable}
      LEFT JOIN ${docTable} ON ${subjTable}.document_id = ${docTable}.id
      LEFT JOIN ${fileTable} ON ${docTable}.file_id = ${fileTable}.id
@@ -93,59 +90,61 @@ export const getDocument = async (
      LIMIT 1;
      `
   )
-  const subj = subjectRes?.[0]
-  if (!subjectRes?.length) return { success: false, data: [] }
+  const subj = subjectRes?.length ? (subjectRes[0] as SubjectV1) : null
+  if (!subjectRes?.length || !subj) return { success: false, data: [] }
 
   const subjectLocRes = await poolQuery(
     `SELECT
-        ${subjAddressTable}.region_code,
-        ${subjAddressTable}.region_name,
-        ${subjAddressTable}.region_type,
-        ${subjAddressTable}.area_name,
-        ${subjAddressTable}.area_type,
-        ${subjAddressTable}.city_name,
-        ${subjAddressTable}.city_type,
-        ${subjAddressTable}.town_name,
-        ${subjAddressTable}.town_type
+        ${subjAddressTable}.region_code AS "regionCode",
+        ${subjAddressTable}.region_name AS "regionName",
+        ${subjAddressTable}.region_type AS "regionType",
+        ${subjAddressTable}.area_name AS "areaName",
+        ${subjAddressTable}.area_type AS "areaType",
+        ${subjAddressTable}.city_name AS "cityName",
+        ${subjAddressTable}.city_type AS "cityType",
+        ${subjAddressTable}.town_name AS "townName",
+        ${subjAddressTable}.town_type AS "townType"
      FROM ${subjAddressTable}
      WHERE 
         ${subjAddressTable}.subject_id=${subj.id}
      LIMIT 1;
      `
   )
-  const subjLoc = subjectLocRes?.[0]
+  const subjLoc = subjectLocRes?.length
+    ? (subjectLocRes?.[0] as SubjectLocation)
+    : null
 
   return {
     success: subjectRes.length >= 1,
     data: [
       {
-        fileId: (subj.file_file_name as string).replace(".xml", ""),
-        id: subj.doc_raw_id,
-        createdAt: subj.doc_created_at
-          ? new Date(subj.doc_created_at)
+        fileId: (subj.fileFileName as string).replace(".xml", ""),
+        id: `${subj.docRawId}`,
+        createdAt: subj.docCreatedAt
+          ? new Date(subj.docCreatedAt)
           : new Date("0000-00-00"),
-        publishedAt: subj.doc_included_at
-          ? new Date(subj.doc_included_at)
+        publishedAt: subj.docIncludedAt
+          ? new Date(subj.docIncludedAt)
           : new Date("0000-00-00"),
-        type: `${subj.doc_subject_type}`,
-        category: `${subj.doc_subject_category}`,
-        new: `${subj.is_new}`,
-        subjectType: subj.is_organisation ? "organization" : "individual",
-        subjectName: subj.subject_name_full,
-        subjectShortName: subj.subject_name_short,
-        subjectInn: subj.inn,
-        subjectNameSurname: subj.last_name,
-        subjectNameName: subj.name,
-        subjectNamePatronymic: subj.middle_name,
-        addressRegionCode: subjLoc?.region_code || null,
-        addressRegionAddressType: subjLoc?.region_type || null,
-        addressRegionAddressName: subjLoc?.region_name || null,
-        addressAreaAddressType: subjLoc?.area_type || null,
-        addressAreaAddressName: subjLoc?.area_name || null,
-        addressCityAddressType: subjLoc?.city_type || null,
-        addressCityAddressName: subjLoc?.city_name || null,
-        addressLocalityAddressType: subjLoc?.town_type || null,
-        addressLocalityAddressName: subjLoc?.town_name || null,
+        type: `${subj.docSubjectType}`,
+        category: `${subj.docSubjectCategory}`,
+        new: `${subj.docIsNew}`,
+        subjectType: subj.isOrganisation ? "organization" : "individual",
+        subjectName: subj.subjectNameFull || "",
+        subjectShortName: subj.subjectNameShort || "",
+        subjectInn: subj.inn || "",
+        subjectNameSurname: subj.lastName || "",
+        subjectNameName: subj.name || "",
+        subjectNamePatronymic: subj.middleName || "",
+        addressRegionCode: subjLoc?.regionCode || "",
+        addressRegionAddressType: subjLoc?.regionType || "",
+        addressRegionAddressName: subjLoc?.regionName || "",
+        addressAreaAddressType: subjLoc?.areaType || "",
+        addressAreaAddressName: subjLoc?.areaName || "",
+        addressCityAddressType: subjLoc?.cityType || "",
+        addressCityAddressName: subjLoc?.cityName || "",
+        addressLocalityAddressType: subjLoc?.townType || "",
+        addressLocalityAddressName: subjLoc?.townName || "",
       },
     ],
   }

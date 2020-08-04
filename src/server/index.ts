@@ -1,6 +1,6 @@
 import express from "express"
 import { cfg } from "../config"
-import { getLatestUpdate, getDocument } from "../database"
+import { getLatestUpdatePostfix, getDocument } from "../database"
 
 export const startServer = () => {
   const app = express()
@@ -21,22 +21,14 @@ export const startServer = () => {
     if (!inn) {
       response.send("Error. Please specify inn.")
     } else {
-      const postfix = (await getLatestUpdate())?.postfix
-      console.log(postfix)
-
+      const postfix = (await getLatestUpdatePostfix()) || ""
       const fields = await getDocument(inn, postfix)
       response.type("application/json")
       fields.success ? response.status(200) : response.status(404)
 
-      response.send(
-        fields.success
-          ? JSON.stringify(fields.data)
-          : "Error. Please check params."
-      )
+      response.send(fields.success ? JSON.stringify(fields.data) : [])
     }
   })
 
   app.listen(port, () => console.log(`App is listening on port ${port}!`))
 }
-
-startServer()
