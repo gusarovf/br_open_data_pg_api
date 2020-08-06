@@ -1,6 +1,7 @@
-import express from "express"
+import { getDocument } from "../database/actions/selects/selects_v1"
+import { getLatestUpdatePostfix } from "../database"
 import { cfg } from "../config"
-import { getLatestUpdatePostfix, getDocument } from "../database"
+import express from "express"
 
 export const startServer = () => {
   const app = express()

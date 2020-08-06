@@ -28,13 +28,6 @@ export interface Document {
   addressLocalityAddressName: string // поле "Наим" элемента "НаселПункт"
 }
 
-export interface Update {
-  archiveId: number
-  tablesPostfix: string
-  isLoaded: number
-  areTablesExist: number
-}
-
 export interface SubjectV1 {
   id: number
   documentId: number
