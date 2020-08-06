@@ -1,5 +1,5 @@
 export const cfg = {
-  serverPort: process.env.SERVER_PORT || 9090,
+  serverPort: process.env.SERVER_PORT ? +process.env.SERVER_PORT : 5000,
   apiSecretKey: process.env.API_SECRET_KEY,
 }
 

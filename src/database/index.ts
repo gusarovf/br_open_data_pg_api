@@ -37,7 +37,7 @@ const getUpdate = async (
       is_loaded AS "isLoaded",
       are_tables_exist as "areTablesExist"
     FROM
-      updates 
+      update
     WHERE
       are_tables_exist = 1
       ${shouldGetOnlyLoaded ? " AND is_loaded = 1 " : ""}
