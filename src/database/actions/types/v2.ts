@@ -1,12 +1,40 @@
 type Nullable<T> = T | null
 
-interface Document {
+export interface Document {
+  archive: ArchiveData
+  file: FileData
+  document: DocumentData
+  subject: {
+    isOrganisation: boolean
+    organisation: Organisation
+    indivudial: Individual
+    inn: string
+
+    locations: sLocation[]
+    okved: SubjectOkved
+    okpd2: SubjectOkpd2[]
+
+    licence: Licence[]
+    partnership: Partnership[]
+    contract: Contract[]
+    agreement: Agreement[]
+  }
+}
+
+//
+
+export interface ArchiveData {
   archiveUrl: string // Ссылка на архив
   archiveDate: Date // Дата архива
   structureUrl: string // Ссылка на структуру файла
   structureDate: Date // Дата структуры файла
-  fileId: string // название файла в котором был элемент
+}
 
+export interface FileData {
+  fileId: string // Название файла в котором был элемент
+}
+
+export interface DocumentData {
   documentId: string // ИдДок
   createdAt: Date // ДатаСост
   includedAt: Date //  ДатаВклМСП
@@ -14,39 +42,33 @@ interface Document {
   category: string // КатСубМСП
   isNew: boolean // ПризНовМСП
   isSocial: boolean // СведСоцПред
-  isOrganisation: number
-
-  oranisation: Organisation
-  indivudial: Individual
-  inn: string
-
-  locations: sLocation[]
-  okved: {
-    main: Okved[]
-    additional: Okved[]
-  }
-  licence: Licence[]
-  product: Product[]
-  partnership: Partnership[]
-  contracts: Contract[]
-  agreements: Agreement[]
 }
 
-//
+export interface SubjectData {
+  subjectId: number
+  isOrganisation: boolean
+  orgNameFull: string
+  orgNameShort: string
+  subjectName: string
+  subjectMiddleName: string
+  subjectLastName: string
+  inn: string
+}
 
-interface Organisation {
+export interface Organisation {
   name: { fullName: Nullable<string>; shortName: Nullable<string> }
 }
 
-interface Individual {
+export interface Individual {
   name: {
+    fullName: Nullable<string>
     firstName: Nullable<string>
     middleName: Nullable<string>
     lastName: Nullable<string>
   }
 }
 
-interface sLocation {
+export interface sLocation {
   regionCode: string
   fullAddress: string
   splittedAddress: {
@@ -57,55 +79,59 @@ interface sLocation {
   }
 }
 
-interface Address {
+export interface Address {
   type: Nullable<string>
   name: Nullable<string>
 }
 
-interface Okved {
+export interface SubjectOkved {
+  main: Okved[] | []
+  additional: Okved[] | []
+}
+
+export interface Okved {
   code: string // КодОКВЭД
   name: string // НаимОКВЭД
   description: Nullable<string>
 }
 
-interface Licence {
+export interface SubjectOkpd2 {
+  code: string // КодПрод
+  name: string // НаимПрод
+  description: Nullable<string>
+}
+
+export interface Licence {
   serial: string // СерЛиценз
   number: string // НомЛиценз
   type: string // ВидЛиценз
-  releaseDate: string // ДатаЛиценз
-  dateStart: string // ДатаНачЛиценз
-  dateEnd: string // ДатаКонЛиценз
+  releaseDate: Date // ДатаЛиценз
+  dateStart: Date // ДатаНачЛиценз
+  dateEnd: Date // ДатаКонЛиценз
   releasedBy: string // ОргВыдЛиценз
   dateCancel: string // ДатаОстЛиценз
   cancelledBy: string // ОргОстЛиценз
   licenceNames: string[] // НаимЛицВД
 }
 
-interface Product {
-  code: string // КодПрод
-  name: string // НаимПрод
-  description: Nullable<string>
-  isHitech: boolean // ПрОтнПрод
-}
-
-interface Customer {
+export interface Customer {
   customerName: string // НаимЮЛ_ПП / НаимЮЛ_ЗК / НаимЮЛ_ЗД
   customerInn: string // ИННЮЛ_ПП / ИННЮЛ_ЗК / ИННЮЛ_ЗД
 }
 
-interface Partnership extends Customer {
+export interface Partnership extends Customer {
   contractNumber: string // НомДог
-  contractDate: Nullable<string> // ДатаДог
+  contractDate: Nullable<Date> // ДатаДог
 }
 
-interface Contract extends Customer {
+export interface Contract extends Customer {
   contractSubject: Nullable<string> // ПредмКонтр
   contractRegNumber: string // НомКонтрРеестр
-  contractDate: Nullable<string> // ДатаКонтр
+  contractDate: Nullable<Date> // ДатаКонтр
 }
 
-interface Agreement extends Customer {
+export interface Agreement extends Customer {
   agreementSubject: Nullable<string> // ПредмДог
   agreementRegNumber: string // НомДогРеестр
-  agreementDate: Nullable<string> // ДатаДог
+  agreementDate: Nullable<Date> // ДатаДог
 }
