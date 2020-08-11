@@ -164,9 +164,9 @@ const getSubjectOkved = async (
   const res = await poolQuery(
     `SELECT
         ${subjectOkvedTable}.is_main AS subject_okved_is_main,
-        ${okvedTable}.code AS okved_code,
-        ${okvedTable}.name AS okved_name,
-        ${okvedTable}.group_description AS okved_group_description
+        ${okvedTable}.code,
+        ${okvedTable}.name,
+        ${okvedTable}.group_description as description
      FROM ${subjectOkvedTable}
      LEFT JOIN ${okvedTable} ON ${subjectOkvedTable}.okved_id = ${okvedTable}.id
      WHERE 
@@ -344,11 +344,14 @@ const getDoc = async (
       },
       indivudial: {
         name: {
-          fullName: [
-            docSubjectData.subjectLastName,
-            docSubjectData.subjectName,
-            docSubjectData.subjectMiddleName,
-          ].join(" "),
+          fullName:
+            [
+              docSubjectData.subjectLastName,
+              docSubjectData.subjectName,
+              docSubjectData.subjectMiddleName,
+            ]
+              .join(" ")
+              .trim() || null,
           firstName: docSubjectData.subjectName,
           middleName: docSubjectData.subjectMiddleName,
           lastName: docSubjectData.subjectLastName,
