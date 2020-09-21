@@ -1,9 +1,12 @@
-import { getDocument } from "../database/actions/selects/selects_v1"
 import { getDocument as getDocumentV2 } from "../database/actions/selects/selects_v2"
-import { getLatestUpdatePostfix } from "../database"
-import { cfg } from "../config"
+import {
+  getBackendVersion,
+  getDbSize,
+  getLatestUpdatePostfix,
+} from "../database/actions/selects"
+import { getDocument } from "../database/actions/selects/selects_v1"
 import express, { Response as ExpressRes } from "express"
-import { getDbSize } from "../database/actions/selects"
+import { cfg } from "../config"
 
 const sendResponse = (res: ExpressRes, success: boolean, data: any[]): void => {
   res.type("application/json")
@@ -60,9 +63,14 @@ export const startServer = () => {
     }
   })
 
-  app.get("/dbsize", async (request, response) => {
+  app.get("/dbsize", async (req, res) => {
     const fields = await getDbSize()
-    sendResponse(response, fields.success, [fields.data])
+    sendResponse(res, fields.success, [fields.data])
+  })
+
+  app.get("/getBackendVersion", async (req, res) => {
+    const fields = await getBackendVersion()
+    sendResponse(res, fields.success, [fields.data])
   })
 
   app.listen(port, () => console.log(`App is listening on port ${port}!`))
